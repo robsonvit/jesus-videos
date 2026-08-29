@@ -1,0 +1,126 @@
+name: 🙏 Gerar Vídeo JESUS
+
+on:
+  workflow_dispatch:
+    inputs:
+      num_videos:
+        description: 'Quantos vídeos gerar (1 a 10)'
+        required: true
+        default: '1'
+        type: choice
+        options:
+          - '1'
+          - '2'
+          - '3'
+          - '5'
+          - '10'
+
+  # Roda todo dia às 12:00 UTC (09:00 Brasília)
+  schedule:
+    - cron: '0 12 * * *'
+
+permissions:
+  contents: write
+
+jobs:
+  gerar-video:
+    name: 🙏 Pipeline de Vídeo JESUS
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      # ── 1. Checkout ───────────────────────────────────────────────────────
+      - name: 📥 Checkout do repositório
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      # ── 2. Python ─────────────────────────────────────────────────────────
+      - name: 🐍 Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      # ── 3. FFmpeg e fontes ────────────────────────────────────────────────
+      - name: 🎬 Instalar FFmpeg e fonte Anton
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends ffmpeg fontconfig
+          sudo mkdir -p /usr/share/fonts/truetype/anton
+          wget -q -O /usr/share/fonts/truetype/anton/Anton-Regular.ttf \
+            "https://github.com/google/fonts/raw/main/ofl/anton/Anton-Regular.ttf"
+          sudo fc-cache -f -v > /dev/null 2>&1
+          ffmpeg -version | head -1
+
+      # ── 4. Cache dos modelos Kokoro (evita baixar 300MB toda vez) ─────────
+      - name: 📦 Cache modelos Kokoro TTS
+        uses: actions/cache@v4
+        id: kokoro-cache
+        with:
+          path: models/
+          key: kokoro-models-v1.0-final
+
+      - name: ⬇️ Baixar modelos Kokoro (só se não estiver no cache)
+        if: steps.kokoro-cache.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p models
+          echo "Baixando kokoro-v1.0.onnx (~300MB)..."
+          curl -L -o models/kokoro-v1.0.onnx \
+            "https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/kokoro-v1.0.onnx"
+          echo "Baixando voices-v1.0.bin (~200MB)..."
+          curl -L -o models/voices-v1.0.bin \
+            "https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/voices-v1.0.bin"
+          echo "Modelos Kokoro prontos!"
+          ls -lh models/
+
+      - name: ✅ Verificar modelos Kokoro
+        run: |
+          ls -lh models/
+          echo "Modelos OK"
+
+      # ── 5. Dependências Python ────────────────────────────────────────────
+      - name: 📦 Instalar dependências Python
+        run: |
+          pip install --upgrade pip -q
+          pip install -r requirements.txt -q
+          echo "Dependências instaladas"
+
+      # ── 6. Pipeline de vídeo ──────────────────────────────────────────────
+      - name: 🚀 Executar pipeline de vídeo
+        env:
+          FISH_API_KEY:         ${{ secrets.FISH_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          GROK_API_KEY:         ${{ secrets.GROK_API_KEY }}
+          PEXELS_API_KEY:       ${{ secrets.PEXELS_API_KEY }}
+          TELEGRAM_BOT_TOKEN:   ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID:     ${{ secrets.TELEGRAM_CHAT_ID }}
+          YOUTUBE_CLIENT_ID:    ${{ secrets.YOUTUBE_CLIENT_ID }}
+          YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
+          YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
+          KOKORO_MODELS_DIR:    models
+        run: |
+          NUM_VIDEOS="${{ github.event.inputs.num_videos || '1' }}"
+          echo "Gerando $NUM_VIDEOS video(s)..."
+          python scripts/pipeline.py "$NUM_VIDEOS"
+
+      # ── 7. Salva temas usados ─────────────────────────────────────────────
+      - name: 💾 Salvar temas usados
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add temas_usados.json
+          git diff --cached --quiet && echo "Sem mudancas" || \
+            git commit -m "Atualiza temas usados [skip ci]"
+          git push || echo "Nada para enviar"
+
+      # ── 8. Upload como artefato (backup) ──────────────────────────────────
+      - name: 📤 Upload vídeo como artefato
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: videos-jesus-${{ github.run_number }}
+          path: output/*.mp4
+          retention-days: 7
+          if-no-files-found: warn
