@@ -1,12 +1,8 @@
 """
 gerar_voz.py
-Sintetiza narração com estratégia dupla:
-
-  PRIMÁRIA  → Fish Audio API (modelo s2.1-pro-free, voz Jesus: da20590a048f483986bf9986e6a87694)
-  FALLBACK  → Kokoro TTS local (pm_santa, PT-BR) — usado se o Fish falhar
-
-Após gerar o áudio (de qualquer uma das fontes), o faster-whisper extrai
-os timestamps palavra a palavra para garantir precisão nas legendas.
+Sintetiza narração com a Fish Audio API (voz Jesus).
+Após gerar o áudio, o faster-whisper extrai os timestamps palavra a palavra
+para garantir precisão nas legendas.
 """
 
 import sys
@@ -32,14 +28,6 @@ FISH_API_KEY    = os.environ.get("FISH_API_KEY", "")
 FISH_VOICE_ID   = "da20590a048f483986bf9986e6a87694"   # Voz Jesus (canal JESUS)
 FISH_MODEL      = "s2.1-pro-free"                       # Modelo gratuito
 FISH_API_URL    = "https://api.fish.audio/v1/tts"
-
-# ── Configurações Kokoro (fallback) ───────────────────────────────────────────
-KOKORO_VOICE  = "pm_santa"
-KOKORO_SPEED  = 0.80
-KOKORO_LANG   = "pt-br"
-_MODELS_DIR   = Path(os.environ.get("KOKORO_MODELS_DIR", "."))
-KOKORO_MODEL  = str(_MODELS_DIR / "kokoro-v1.0.onnx")
-KOKORO_VOICES = str(_MODELS_DIR / "voices-v1.0.bin")
 
 
 # ── Etapa 1-A: Áudio via Fish Audio API ──────────────────────────────────────
@@ -92,27 +80,7 @@ def _gerar_audio_fish(texto: str, output_mp3: str) -> float:
     return duracao
 
 
-# ── Etapa 1-B: Áudio via Kokoro local (fallback) ─────────────────────────────
-def _gerar_audio_kokoro(texto: str, output_wav: str) -> float:
-    """Gera o áudio com Kokoro localmente (modo fallback)."""
-    # Importação lazy — só carrega se o Kokoro for realmente usado
-    from kokoro_onnx import Kokoro  # noqa: PLC0415
-
-    print(f"  [Kokoro FALLBACK] Carregando modelo de: {_MODELS_DIR}")
-    kokoro = Kokoro(KOKORO_MODEL, KOKORO_VOICES)
-
-    samples, sample_rate = kokoro.create(
-        texto,
-        voice=KOKORO_VOICE,
-        speed=KOKORO_SPEED,
-        lang=KOKORO_LANG,
-    )
-
-    sf.write(output_wav, samples, sample_rate)
-    duracao = len(samples) / sample_rate
-    print(f"  [Kokoro FALLBACK] Áudio gerado: {output_wav} ({duracao:.1f}s)")
-    return duracao
-
+# Removido Kokoro Fallback
 
 # ── Etapa 2: Timestamps via faster-whisper (Local & Gratuito) ───────────────
 def _extrair_timestamps_local(audio_path: str) -> list:
@@ -159,28 +127,9 @@ def gerar_voz(texto: str, output_audio: str, output_timing: str) -> list:
     work = Path(output_audio).parent
     fonte_usada = "?"
 
-    # ── Tentativa 1: Fish Audio ───────────────────────────────────────────────
-    try:
-        _gerar_audio_fish(texto, output_audio)
-        fonte_usada = "Fish Audio (s2.1-pro-free)"
-    except Exception as err_fish:
-        print(f"\n  ⚠️  Fish Audio falhou: {err_fish}")
-        print("  🔄 Ativando fallback: Kokoro TTS local...\n")
-
-        # ── Fallback: Kokoro ──────────────────────────────────────────────────
-        wav_temp = str(work / "_kokoro_raw.wav")
-        _gerar_audio_kokoro(texto, wav_temp)
-
-        # Converte WAV → MP3
-        print("  Convertendo WAV para MP3 (fallback Kokoro)...")
-        result = subprocess.run(
-            ["ffmpeg", "-y", "-i", wav_temp, "-b:a", "192k", output_audio],
-            capture_output=True, text=True,
-        )
-        if result.returncode != 0:
-            raise RuntimeError(f"ffmpeg WAV→MP3 falhou:\n{result.stderr}")
-        Path(wav_temp).unlink(missing_ok=True)
-        fonte_usada = f"Kokoro FALLBACK ({KOKORO_VOICE})"
+    # ── Tentativa Única: Fish Audio ───────────────────────────────────────────
+    _gerar_audio_fish(texto, output_audio)
+    fonte_usada = "Fish Audio (s2.1-pro-free)"
 
     # ── Timestamps via Whisper Local ──────────────────────────────────────────
     timings = _extrair_timestamps_local(output_audio)
@@ -206,7 +155,7 @@ def calcular_duracao_audio(timing_file: str) -> float:
 # ── Teste standalone ──────────────────────────────────────────────────────────
 if __name__ == "__main__":
     if "--test" in sys.argv:
-        print("Teste de geração de voz: Fish Audio → (fallback) Kokoro + Local Whisper")
+        print("Teste de geração de voz: Fish Audio + Local Whisper")
         texto_teste = (
             "Tem pessoas que somem da sua vida exatamente quando você mais precisa. "
             "Isso não é coincidência. Isso é quem elas sempre foram. "

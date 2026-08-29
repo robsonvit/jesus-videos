@@ -53,31 +53,7 @@ jobs:
           sudo fc-cache -f -v > /dev/null 2>&1
           ffmpeg -version | head -1
 
-      # ── 4. Cache dos modelos Kokoro (evita baixar 300MB toda vez) ─────────
-      - name: 📦 Cache modelos Kokoro TTS
-        uses: actions/cache@v4
-        id: kokoro-cache
-        with:
-          path: models/
-          key: kokoro-models-v1.0-final
-
-      - name: ⬇️ Baixar modelos Kokoro (só se não estiver no cache)
-        if: steps.kokoro-cache.outputs.cache-hit != 'true'
-        run: |
-          mkdir -p models
-          echo "Baixando kokoro-v1.0.onnx (~300MB)..."
-          curl -L -o models/kokoro-v1.0.onnx \
-            "https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/kokoro-v1.0.onnx"
-          echo "Baixando voices-v1.0.bin (~200MB)..."
-          curl -L -o models/voices-v1.0.bin \
-            "https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/voices-v1.0.bin"
-          echo "Modelos Kokoro prontos!"
-          ls -lh models/
-
-      - name: ✅ Verificar modelos Kokoro
-        run: |
-          ls -lh models/
-          echo "Modelos OK"
+      # ── (Removido: Modelos Kokoro não são mais necessários) ───────────────
 
       # ── 5. Dependências Python ────────────────────────────────────────────
       - name: 📦 Instalar dependências Python
@@ -98,7 +74,6 @@ jobs:
           YOUTUBE_CLIENT_ID:    ${{ secrets.YOUTUBE_CLIENT_ID }}
           YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
           YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
-          KOKORO_MODELS_DIR:    models
         run: |
           NUM_VIDEOS="${{ github.event.inputs.num_videos || '1' }}"
           echo "Gerando $NUM_VIDEOS video(s)..."
