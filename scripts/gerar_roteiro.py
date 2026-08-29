@@ -20,10 +20,13 @@ OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 # Modelos gratuitos em ordem de preferência — sufixo :free = sem custo
 # O router automático "openrouter/auto:free" escolhe o melhor gratuito disponível
 MODELOS_GRATUITOS = [
+    "meta-llama/llama-3.1-8b-instruct:free",
+    "qwen/qwen-2.5-72b-instruct:free",
+    "mistralai/mistral-nemo:free",
+    "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
     "openrouter/auto:free",
     "openai/gpt-oss-20b:free",
     "google/gemma-4-31b-it:free",
-    "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
     "z-ai/glm-5.2:free",
 ]
 
