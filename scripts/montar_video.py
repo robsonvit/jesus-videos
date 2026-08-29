@@ -216,8 +216,8 @@ def processar_clip_vertical(
         f"{setpts_str}"                   # [FIX-2/FIX-7] Timestamps
     )
     run_ffmpeg([
+        "-t", str(duracao_input),          # [FIX-7] Limit input reading
         "-i", input_path,
-        "-t", str(duracao_input),          # [FIX-7] Leitura ajustada
         "-vf", vf,
         "-c:v", "libx264", "-crf", "22", "-preset", "fast",
         "-r", str(VIDEO_FPS),            # [FIX-2] Força FPS também no codec
