@@ -54,6 +54,9 @@ NATURE_KEYWORDS = [
     "bear river nature",
     "hawk soaring sky",
     "horse galloping nature",
+    "tiger walking majestic",
+    "elephant nature wild",
+    "panther wild dark",
     # Paisagens grandiosas
     "mountain sunrise clouds",
     "ocean waves powerful",
@@ -63,6 +66,22 @@ NATURE_KEYWORDS = [
     "desert dunes sunset",
     "volcano eruption nature",
     "aurora borealis sky",
+    # Jesus / Bíblico
+    "jesus christ cinematic",
+    "jesus praying cinematic",
+    "cross hill sunset",
+    "jesus walking ancient",
+    "bible holy cinematic",
+    "jesus silhouette sunrise",
+    "church ancient light",
+    # Humanos em situações de solidão / reflexão
+    "man looking at horizon lonely",
+    "person praying silhouette",
+    "woman looking at ocean lonely",
+    "man walking alone cinematic",
+    "person sitting alone thinking",
+    "alone in the dark cinematic",
+    "lonely figure fog",
 ]
 
 

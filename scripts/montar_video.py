@@ -26,8 +26,8 @@ from pathlib import Path
 VIDEO_WIDTH  = 1080
 VIDEO_HEIGHT = 1920
 SHELBY_CLIP_DURATION = 4.0   # Segundos do clip de abertura (CLIPES INICIAIS)
-MAX_CLIP_DURATION    = 3.0   # MÁXIMO 3s de input por clip Pexels
-FONT_FILE = "/usr/share/fonts/truetype/anton/Anton-Regular.ttf"
+XFADE_DURATION       = 1.0   # Duração da transição suave entre clips (crossfade)
+FONT_FILE = r"'C\:/Windows/Fonts/impact.ttf'"
 FONT_SIZE = 84
 VIDEO_FPS = 30               # FPS único para todos os clips → elimina congelamentos
 SLOW_MOTION_FACTOR = 2.0    # [FIX-7] Câmera lenta 0.5x: lê 1s de input → produz 2s de output
@@ -252,9 +252,10 @@ def montar_video(
     duracao_audio_com_margem = duracao_audio + MARGEM_FINAL
     print(f"\nDuracao do audio: {duracao_audio:.1f}s (+{MARGEM_FINAL}s margem = {duracao_audio_com_margem:.1f}s total)")
 
-    duracao_pexels_necessaria = max(1.0, duracao_audio_com_margem - SHELBY_CLIP_DURATION)
-    duracao_total = SHELBY_CLIP_DURATION + duracao_pexels_necessaria
-    print(f"Duracao total do video: {duracao_total:.1f}s")
+    # Na montagem com xfade, cada transição subtrai XFADE_DURATION do total.
+    # Vamos calcular isso dinamicamente no loop.
+    duracao_alvo = duracao_audio_com_margem
+    print(f"Duracao alvo do video: {duracao_alvo:.1f}s")
 
     # ── 2. Clip Shelby ────────────────────────────────────────────────────────
     print("\nProcessando clip Shelby...")
@@ -267,7 +268,11 @@ def montar_video(
     # ── 3. Clips Pexels (espelhados + câmera lenta 0.5x) ────────────────────
     print("\nProcessando clips Pexels (hflip + slow motion 0.5x)...")
     pexels_processados = []
-    acumulado = 0.0
+    
+    # Duração total atual (Shelby já ocupa shelby_dur)
+    duracao_total_atual = shelby_dur
+    clip_durations = [shelby_dur]
+
     idx = 0
     volta = 0  # Conta quantas vezes reciclamos a lista inteira
 
@@ -275,7 +280,7 @@ def montar_video(
     pexels_ordem = pexels_clips[:]
     random.shuffle(pexels_ordem)
 
-    while acumulado < duracao_pexels_necessaria:
+    while duracao_total_atual < duracao_alvo:
         # Ao completar uma volta na lista, embaralha com seed diferente
         lista_idx = idx % len(pexels_ordem)
         if lista_idx == 0 and idx > 0:
@@ -289,17 +294,26 @@ def montar_video(
 
         # Com slow_motion=True, o input real consumido = dur_clip/SLOW_MOTION_FACTOR
         # Mas a duração de OUTPUT (o que entra no concat) = dur_clip
-        dur_clip = min(
-            MAX_CLIP_DURATION,
-            duracao_pexels_necessaria - acumulado
-        )
+        # Duração alvo do clip: aleatório entre 3 e 6 segundos (para dar dinâmica)
+        # Se for o último clip, ajusta para bater exatamente a duração alvo
+        falta = duracao_alvo - duracao_total_atual
+        target_clip = random.uniform(3.0, 6.0)
+        
+        # Como o xfade vai sobrepor XFADE_DURATION, este clip vai adicionar de fato (target_clip - XFADE_DURATION)
+        # Se (target_clip - XFADE_DURATION) for maior que o que falta, cortamos.
+        add_efetivo = target_clip - XFADE_DURATION
+        if add_efetivo > falta:
+            target_clip = falta + XFADE_DURATION
+        
+        dur_clip = target_clip
+
         # Garante que temos input suficiente para a câmera lenta
         dur_input_necessario = dur_clip / SLOW_MOTION_FACTOR
         if dur_orig < dur_input_necessario:
             # Clip muito curto: usa o máximo possível em slow motion
             dur_clip = dur_orig * SLOW_MOTION_FACTOR
 
-        if dur_clip < 0.5:
+        if dur_clip < 0.5 + XFADE_DURATION:  # Tem que ser maior que o fade
             idx += 1
             continue
 
@@ -310,24 +324,41 @@ def montar_video(
             slow_motion=True,     # [FIX-7] Câmera lenta 0.5x
         )
         pexels_processados.append(out_clip)
-        acumulado += dur_clip
+        clip_durations.append(dur_clip)
+        
+        # Atualiza a duração total da timeline
+        duracao_total_atual += (dur_clip - XFADE_DURATION)
         idx += 1
 
-    print(f"  {len(pexels_processados)} clips Pexels ({acumulado:.1f}s em output, {acumulado/SLOW_MOTION_FACTOR:.1f}s de input lido)")
+    duracao_total = duracao_total_atual
+    print(f"  {len(pexels_processados)} clips Pexels (Timeline total atingiu {duracao_total:.1f}s)")
 
     # ── 4. Concatena usando concat FILTER (mais robusto que demuxer) ──────────
     print("\nConcatenando clips com concat filter...")
     todos = [shelby_out] + pexels_processados
 
-    # Monta inputs e concat filter dinamicamente
+    # Monta inputs e xfade filter dinamicamente
     inputs = []
     for c in todos:
         inputs += ["-i", c]
 
     n = len(todos)
-    # Concat filter: [0:v][1:v][2:v]... concat=n=N:v=1:a=0 [vconcat]
-    concat_inputs = "".join(f"[{i}:v]" for i in range(n))
-    concat_filter = f"{concat_inputs}concat=n={n}:v=1:a=0[vconcat]"
+    if n == 1:
+        concat_filter = "[0:v]copy[vconcat]"
+    else:
+        filter_parts = []
+        last_out = "[0:v]"
+        current_offset = clip_durations[0] - XFADE_DURATION
+        for i in range(1, n):
+            out_label = f"[v{i}]" if i < n - 1 else "[vconcat]"
+            filter_parts.append(
+                f"{last_out}[{i}:v]xfade=transition=fade:duration={XFADE_DURATION}:offset={current_offset:.2f}{out_label}"
+            )
+            last_out = out_label
+            if i < n - 1:
+                current_offset += clip_durations[i] - XFADE_DURATION
+        
+        concat_filter = ";".join(filter_parts)
 
     video_concat = str(work / "video_concat.mp4")
     run_ffmpeg(
@@ -394,10 +425,14 @@ def montar_video(
         filter_final = filter_complex + ";[1:a]volume=1.10[aout]"
         audio_map = ["-map", "[aout]"]
 
+    filter_script = str(work / "filter_complex.txt")
+    with open(filter_script, "w", encoding="utf-8") as fs:
+        fs.write(filter_final)
+
     print("Renderizando video final com audio + legendas + efeitos...")
     run_ffmpeg(
         ffmpeg_inputs + [
-            "-filter_complex", filter_final,
+            "-filter_complex_script", filter_script,
             "-map", "[vout]",
         ] + audio_map + [
             "-c:v", "libx264", "-crf", "22", "-preset", "medium",
