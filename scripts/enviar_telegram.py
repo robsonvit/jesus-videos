@@ -93,7 +93,7 @@ if __name__ == "__main__":
     if "--test" in sys.argv:
         print("🧪 Testando conexão com Telegram...")
         ok = enviar_mensagem_telegram(
-            "🎬 <b>PORRADA Bot</b> está online e pronto para enviar vídeos! ✅"
+            "🙏 <b>JESUS Bot</b> está online e pronto para enviar vídeos! ✅"
         )
         if ok:
             print("✅ Mensagem de teste enviada com sucesso!")

@@ -2,7 +2,7 @@
 gerar_voz.py
 Sintetiza narração com estratégia dupla:
 
-  PRIMÁRIA  → Fish Audio API (modelo s2.1-pro-free, voz clonada 86f23b65...)
+  PRIMÁRIA  → Fish Audio API (modelo s2.1-pro-free, voz Jesus: da20590a048f483986bf9986e6a87694)
   FALLBACK  → Kokoro TTS local (pm_santa, PT-BR) — usado se o Fish falhar
 
 Após gerar o áudio (de qualquer uma das fontes), o faster-whisper extrai
@@ -29,7 +29,7 @@ from openai import OpenAI
 
 # ── Configurações Fish Audio ──────────────────────────────────────────────────
 FISH_API_KEY    = os.environ.get("FISH_API_KEY", "")
-FISH_VOICE_ID   = "86f23b6596304f22955de78fe89638fc"   # Voz já clonada no Fish
+FISH_VOICE_ID   = "da20590a048f483986bf9986e6a87694"   # Voz Jesus (canal JESUS)
 FISH_MODEL      = "s2.1-pro-free"                       # Modelo gratuito
 FISH_API_URL    = "https://api.fish.audio/v1/tts"
 
@@ -56,11 +56,11 @@ def _gerar_audio_fish(texto: str, output_mp3: str) -> float:
     headers = {
         "Authorization": f"Bearer {FISH_API_KEY}",
         "Content-Type": "application/json",
-        "model": FISH_MODEL,
     }
     payload = {
         "text": texto,
         "reference_id": FISH_VOICE_ID,
+        "model": FISH_MODEL,          # modelo no payload (não no header)
         "format": "mp3",
         "mp3_bitrate": 192,
         "normalize": True,
