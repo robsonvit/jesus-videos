@@ -1,5 +1,5 @@
 """
-montar_video.py — Montagem final do vídeo PORRADA usando FFmpeg.
+montar_video.py — Montagem final do vídeo JESUS usando FFmpeg.
 
 Correções aplicadas:
   [FIX-1] Legendas limpas: pontuação removida, agrupamento em MÁXIMO 2 palavras
@@ -8,6 +8,8 @@ Correções aplicadas:
   [FIX-4] Voz rápida: tempo mínimo por bloco aumentado para 0.6s
   [FIX-5] Volume voz 110%, música 20%
   [FIX-6] Legendas sem sobreposição: fim de cada bloco limitado ao início do próximo
+  [FIX-7] Câmera lenta 0.5x nos clips Pexels (setpts=2.0*PTS)
+  [FIX-8] Embaralhamento dinâmico: ordem diferente a cada reciclagem de clips
 """
 
 import json
@@ -20,14 +22,15 @@ import tempfile
 from pathlib import Path
 
 
-# ── Configurações ─────────────────────────────────────────────────────────────
+# ── Configurações ────────────────────────────────────────────────────────────────
 VIDEO_WIDTH  = 1080
 VIDEO_HEIGHT = 1920
-SHELBY_CLIP_DURATION = 4.0   # Segundos do clip Shelby no início
-MAX_CLIP_DURATION    = 3.0   # MÁXIMO 3s por clip Pexels (evita cópias)
+SHELBY_CLIP_DURATION = 4.0   # Segundos do clip de abertura (CLIPES INICIAIS)
+MAX_CLIP_DURATION    = 3.0   # MÁXIMO 3s de input por clip Pexels
 FONT_FILE = "/usr/share/fonts/truetype/anton/Anton-Regular.ttf"
 FONT_SIZE = 84
 VIDEO_FPS = 30               # FPS único para todos os clips → elimina congelamentos
+SLOW_MOTION_FACTOR = 2.0    # [FIX-7] Câmera lenta 0.5x: lê 1s de input → produz 2s de output
 
 
 # ── Utilidades FFmpeg ─────────────────────────────────────────────────────────
@@ -175,37 +178,52 @@ def gerar_filtro_legendas(word_timings: list, font_file: str) -> str:
     return ",".join(filtros)
 
 
-# ── [FIX-2] Processamento de clips com FPS uniforme ──────────────────────────
+# ── [FIX-2] Processamento de clips com FPS uniforme ──────────────────────
 def processar_clip_vertical(
     input_path: str,
     output_path: str,
     duracao: float,
     aplicar_hflip: bool = False,
+    slow_motion: bool = False,
 ) -> None:
     """
     Converte clipe para formato vertical 1080x1920.
 
     [FIX-2] fps=30 ANTES de qualquer outro filtro → elimina congelamentos
     [FIX-2] setpts=PTS-STARTPTS → reseta timestamps para evitar descontinuidades
+    [FIX-7] slow_motion=True: lê (duracao/SLOW_MOTION_FACTOR) segundos do input
+             e aplica setpts=SLOW_MOTION_FACTOR*PTS para obter câmera lenta real.
+             Resultado: 1s de input → 2s de output (0.5x velocidade).
     """
     hflip_str = "hflip," if aplicar_hflip else ""
+
+    if slow_motion:
+        # Lê menos segundos do input; setpts estica o tempo no output
+        duracao_input = duracao / SLOW_MOTION_FACTOR
+        setpts_str = f"setpts={SLOW_MOTION_FACTOR:.1f}*PTS-STARTPTS"
+        desc_extra = f" [SLOW {SLOW_MOTION_FACTOR:.1f}x]"
+    else:
+        duracao_input = duracao
+        setpts_str = "setpts=PTS-STARTPTS"
+        desc_extra = ""
+
     vf = (
         f"fps={VIDEO_FPS},"               # [FIX-2] Normaliza FPS PRIMEIRO
         f"{hflip_str}"
         f"scale={VIDEO_WIDTH}:{VIDEO_HEIGHT}:force_original_aspect_ratio=increase,"
         f"crop={VIDEO_WIDTH}:{VIDEO_HEIGHT},"
         f"setsar=1,"
-        f"setpts=PTS-STARTPTS"            # [FIX-2] Reseta timestamps
+        f"{setpts_str}"                   # [FIX-2/FIX-7] Timestamps
     )
     run_ffmpeg([
         "-i", input_path,
-        "-t", str(duracao),
+        "-t", str(duracao_input),          # [FIX-7] Leitura ajustada
         "-vf", vf,
         "-c:v", "libx264", "-crf", "22", "-preset", "fast",
         "-r", str(VIDEO_FPS),            # [FIX-2] Força FPS também no codec
         "-an",
         output_path,
-    ], description=f"Convertendo {Path(input_path).name} ({duracao:.1f}s @ {VIDEO_FPS}fps)")
+    ], description=f"Convertendo {Path(input_path).name} ({duracao:.1f}s @ {VIDEO_FPS}fps{desc_extra})")
 
 
 # ── Função principal de montagem ──────────────────────────────────────────────
@@ -246,29 +264,56 @@ def montar_video(
     shelby_out       = str(work / "shelby_proc.mp4")
     processar_clip_vertical(shelby_escolhido, shelby_out, shelby_dur, aplicar_hflip=False)
 
-    # ── 3. Clips Pexels (espelhados, máx 3s cada) ────────────────────────────
-    print("\nProcessando clips Pexels...")
+    # ── 3. Clips Pexels (espelhados + câmera lenta 0.5x) ────────────────────
+    print("\nProcessando clips Pexels (hflip + slow motion 0.5x)...")
     pexels_processados = []
     acumulado = 0.0
     idx = 0
+    volta = 0  # Conta quantas vezes reciclamos a lista inteira
+
+    # Lista de trabalho: será embaralhada de forma diferente a cada reciclagem
+    pexels_ordem = pexels_clips[:]
+    random.shuffle(pexels_ordem)
 
     while acumulado < duracao_pexels_necessaria:
-        clip_orig = pexels_clips[idx % len(pexels_clips)]
+        # Ao completar uma volta na lista, embaralha com seed diferente
+        lista_idx = idx % len(pexels_ordem)
+        if lista_idx == 0 and idx > 0:
+            volta += 1
+            rng_recicla = random.Random(volta * 31337)
+            rng_recicla.shuffle(pexels_ordem)
+            print(f"  ♻️  Reciclando clips (volta #{volta}) com nova ordem...")
+
+        clip_orig = pexels_ordem[lista_idx]
         dur_orig  = get_media_duration(clip_orig)
-        dur_clip  = min(dur_orig, MAX_CLIP_DURATION, duracao_pexels_necessaria - acumulado)
+
+        # Com slow_motion=True, o input real consumido = dur_clip/SLOW_MOTION_FACTOR
+        # Mas a duração de OUTPUT (o que entra no concat) = dur_clip
+        dur_clip = min(
+            MAX_CLIP_DURATION,
+            duracao_pexels_necessaria - acumulado
+        )
+        # Garante que temos input suficiente para a câmera lenta
+        dur_input_necessario = dur_clip / SLOW_MOTION_FACTOR
+        if dur_orig < dur_input_necessario:
+            # Clip muito curto: usa o máximo possível em slow motion
+            dur_clip = dur_orig * SLOW_MOTION_FACTOR
+
         if dur_clip < 0.5:
-            break
+            idx += 1
+            continue
 
         out_clip = str(work / f"pexels_{idx:02d}.mp4")
         processar_clip_vertical(
             clip_orig, out_clip, dur_clip,
-            aplicar_hflip=True,
+            aplicar_hflip=True,   # [FIX] Sempre espelhado horizontalmente
+            slow_motion=True,     # [FIX-7] Câmera lenta 0.5x
         )
         pexels_processados.append(out_clip)
         acumulado += dur_clip
         idx += 1
 
-    print(f"  {len(pexels_processados)} clips Pexels ({acumulado:.1f}s)")
+    print(f"  {len(pexels_processados)} clips Pexels ({acumulado:.1f}s em output, {acumulado/SLOW_MOTION_FACTOR:.1f}s de input lido)")
 
     # ── 4. Concatena usando concat FILTER (mais robusto que demuxer) ──────────
     print("\nConcatenando clips com concat filter...")

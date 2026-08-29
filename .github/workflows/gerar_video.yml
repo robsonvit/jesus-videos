@@ -104,15 +104,18 @@ jobs:
           echo "Gerando $NUM_VIDEOS video(s)..."
           python scripts/pipeline.py "$NUM_VIDEOS"
 
-      # ── 7. Salva temas usados ─────────────────────────────────────────────
-      - name: 💾 Salvar temas usados
+      # ── 7. Salva temas usados + histórico Pexels ─────────────────────────
+      - name: 💾 Salvar temas e histórico de clips Pexels
         if: always()
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          # Salva ambos os arquivos de controle
           git add temas_usados.json
+          # pexels_usados.json pode não existir se o pipeline falhou cedo
+          [ -f pexels_usados.json ] && git add pexels_usados.json || true
           git diff --cached --quiet && echo "Sem mudancas" || \
-            git commit -m "Atualiza temas usados [skip ci]"
+            git commit -m "Atualiza controle de temas e clips Pexels [skip ci]"
           git push || echo "Nada para enviar"
 
       # ── 8. Upload como artefato (backup) ──────────────────────────────────
