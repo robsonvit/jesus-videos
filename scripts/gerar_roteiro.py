@@ -18,16 +18,26 @@ OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "")
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 
 # Modelos gratuitos em ordem de preferência — sufixo :free = sem custo
-# O router automático "openrouter/auto:free" escolhe o melhor gratuito disponível
+# Lista atualizada em 29/08/2026 via API do OpenRouter
 MODELOS_GRATUITOS = [
-    "meta-llama/llama-3.1-8b-instruct:free",
-    "qwen/qwen-2.5-72b-instruct:free",
-    "mistralai/mistral-nemo:free",
-    "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
-    "openrouter/auto:free",
-    "openai/gpt-oss-20b:free",
+    "minimax/minimax-m3:free",
     "google/gemma-4-31b-it:free",
+    "google/gemma-4-26b-a4b-it:free",
+    "minimax/minimax-m2.7:free",
+    "nvidia/nemotron-3.5-lightning:free",
+    "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+    "nvidia/nemotron-3-super-120b-a12b:free",
+    "nvidia/nemotron-3-ultra-550b-a55b:free",
+    "liquid/lfm-2.5-2.6b:free",
+    "poolside/laguna-s-2.1:free",
+    "poolside/laguna-xs-2.1:free",
     "z-ai/glm-5.2:free",
+    "thinkingmachines/inkling:free",
+    "thinkingmachines/inkling-small:free",
+    "inclusionai/ling-3.0-flash-fin:free",
+    "dots-studio/dots-3-note-preview:free",
+    "cohere/north-mini-code:free",
+    "openrouter/free"
 ]
 
 TEMAS_FILE = Path(__file__).parent.parent / "temas_usados.json"
