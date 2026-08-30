@@ -309,6 +309,7 @@ def gerar_roteiro(tema: str) -> dict:
     Gera o roteiro viral via OpenRouter usando modelos gratuitos.
     Tenta cada modelo da lista em ordem até um funcionar.
     """
+    global MODELOS_GRATUITOS
     if not OPENROUTER_API_KEY:
         raise RuntimeError("OPENROUTER_API_KEY não definida!")
 
@@ -374,7 +375,6 @@ Para hashtags_tema, gere EXATAMENTE 3 hashtags em português (sem espaços, sem 
             
             # Estratégia de velocidade: Move o modelo que funcionou para o topo da lista
             # Assim, no próximo vídeo dessa mesma rodada, ele será o primeiro a ser testado!
-            global MODELOS_GRATUITOS
             if modelo in MODELOS_GRATUITOS:
                 MODELOS_GRATUITOS.remove(modelo)
                 MODELOS_GRATUITOS.insert(0, modelo)
