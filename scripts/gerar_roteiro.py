@@ -356,6 +356,7 @@ Para hashtags_tema, gere EXATAMENTE 3 hashtags em português (sem espaços, sem 
                 ],
                 temperature=0.7,
                 max_tokens=1500,
+                timeout=20.0,
                 extra_headers={
                     "HTTP-Referer": "https://github.com/robsonvit/PORRADA-videos",
                     "X-Title": "PORRADA Videos Bot",
