@@ -356,7 +356,7 @@ Para hashtags_tema, gere EXATAMENTE 3 hashtags em português (sem espaços, sem 
                 ],
                 temperature=0.7,
                 max_tokens=1500,
-                timeout=20.0,
+                timeout=10.0,
                 extra_headers={
                     "HTTP-Referer": "https://github.com/robsonvit/PORRADA-videos",
                     "X-Title": "PORRADA Videos Bot",
@@ -371,6 +371,14 @@ Para hashtags_tema, gere EXATAMENTE 3 hashtags em português (sem espaços, sem 
 
             result = _extrair_json(content)
             print(f"  ✅ Roteiro gerado com sucesso via {modelo}")
+            
+            # Estratégia de velocidade: Move o modelo que funcionou para o topo da lista
+            # Assim, no próximo vídeo dessa mesma rodada, ele será o primeiro a ser testado!
+            global MODELOS_GRATUITOS
+            if modelo in MODELOS_GRATUITOS:
+                MODELOS_GRATUITOS.remove(modelo)
+                MODELOS_GRATUITOS.insert(0, modelo)
+                
             break
 
         except Exception as e:
