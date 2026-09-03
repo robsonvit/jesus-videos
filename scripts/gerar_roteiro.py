@@ -41,6 +41,7 @@ MODELOS_GRATUITOS = [
 ]
 
 TEMAS_FILE = Path(__file__).parent.parent / "temas_usados.json"
+HISTORICO_FILE = Path(__file__).parent.parent / "historico_ganchos.json"
 
 TEMAS_BASE = [
     "pessoas que somem quando você mais precisa delas",
@@ -132,7 +133,7 @@ Exemplos de estrutura:
 “Talvez hoje você esteja pensando em desistir.”
 “Ninguém sabe o peso que você está carregando, mas Eu sei.”
 “Você não chegou aqui por acaso.”
-IMPORTANTE: Não reutilize sempre os mesmos formatos. Crie ganchos variados, inesperados e emocionais.
+IMPORTANTE E MANDATÓRIO: É PROIBIDO REUTILIZAR SEMPRE OS MESMOS FORMATOS DE GANCHO. Não comece todos os vídeos com "Eu sei...". Use sua máxima criatividade para gerar aberturas 100% únicas, imprevisíveis, impactantes e que soem altamente originais.
 
 ---
 
@@ -212,8 +213,11 @@ Antes do roteiro, identifique internamente a dor principal.
 
 ---
 
-# 16. VARIAÇÃO OBRIGATÓRIA
-Alterne: tipo de gancho, ritmo, emoção principal, versículo, oração, CTA.
+# 16. VARIAÇÃO OBRIGATÓRIA E ABSOLUTA PROIBIÇÃO DE REPETIÇÃO
+É ESTRITAMENTE PROIBIDO usar sempre o mesmo formato de gancho. 
+Você deve CRIAR GANCHOS TOTALMENTE INÉDITOS E DIFERENTES a cada geração.
+NÃO REPITA AS MESMAS PALAVRAS DO TEMA PRINCIPAL DIRETAMENTE NO TEXTO. Aborde o tema de forma criativa, indireta, através de sensações, sem parecer que está lendo o título.
+Alterne drasticamente: o tipo de gancho (pergunta, afirmação chocante, consolo direto, observação), o ritmo, a emoção principal, o versículo, a oração e o CTA.
 
 ---
 
@@ -259,6 +263,24 @@ def escolher_tema() -> str:
     tema = random.choice(disponiveis)
     print(f"Tema escolhido: {tema}")
     return tema
+
+
+def carregar_historico_ganchos() -> list:
+    if HISTORICO_FILE.exists():
+        with open(HISTORICO_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return []
+
+
+def salvar_no_historico(roteiro_fala: str) -> None:
+    primeira_frase = roteiro_fala.split('.')[0].strip() + '.'
+    usados = carregar_historico_ganchos()
+    usados.append(primeira_frase)
+    if len(usados) > 5:
+        usados = usados[-5:]
+    with open(HISTORICO_FILE, "w", encoding="utf-8") as f:
+        json.dump(usados, f, ensure_ascii=False, indent=2)
+
 
 
 # ── Extrator de JSON robusto ──────────────────────────────────────────────────
@@ -318,7 +340,12 @@ def gerar_roteiro(tema: str) -> dict:
         base_url=OPENROUTER_BASE_URL,
     )
 
-    user_prompt = f"""Tema: {tema}
+    historico = carregar_historico_ganchos()
+    historico_str = ""
+    if historico:
+        historico_str = "\n\n⚠️ GANCHOS RECENTEMENTE USADOS (É EXTREMAMENTE PROIBIDO COMEÇAR COM ESTAS FRASES OU ALGO PARECIDO, SEJA CRIATIVO):\n" + "\n".join(f"- {g}" for g in historico)
+
+    user_prompt = f"""Tema: {tema}{historico_str}
 
 Com base no tema acima, crie o roteiro completo seguindo todas as regras do sistema.
 
@@ -390,6 +417,10 @@ Para hashtags_tema, gere EXATAMENTE 3 hashtags em português (sem espaços, sem 
         raise ValueError(f"Todos os modelos OpenRouter falharam. Último erro: {last_error}")
 
     result["tema"] = tema
+    
+    # Salva o novo gancho na memória
+    if "roteiro_fala" in result:
+        salvar_no_historico(result["roteiro_fala"])
 
     # Monta campo 'hashtags' unificado
     hashtags_tema = result.get("hashtags_tema", [])
