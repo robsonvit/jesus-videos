@@ -23,6 +23,10 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+# Força o encoding UTF-8 no stdout para suportar emojis no console do Windows
+if sys.stdout.encoding.lower() != 'utf-8':
+    sys.stdout.reconfigure(encoding='utf-8')
+
 
 # ── Adiciona o diretório de scripts ao path ───────────────────────────────────
 sys.path.insert(0, str(Path(__file__).parent))

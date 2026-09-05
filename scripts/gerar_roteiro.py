@@ -43,28 +43,129 @@ MODELOS_GRATUITOS = [
 TEMAS_FILE = Path(__file__).parent.parent / "temas_usados.json"
 HISTORICO_FILE = Path(__file__).parent.parent / "historico_ganchos.json"
 
-TEMAS_BASE = [
-    "pessoas que somem quando você mais precisa delas",
-    "amizades falsas que só aparecem quando precisam de algo",
-    "o preço real de mudar de vida e perder pessoas no caminho",
-    "pessoas que te subestimam até você vencer",
-    "maturidade emocional que a vida ensina na dor",
-    "relacionamentos onde só você se esforça",
-    "o peso de crescer sem apoio emocional de ninguém",
-    "traição das pessoas em quem você confiava cegamente",
-    "a ilusão de que alguém vai te salvar",
-    "limites pessoais que você precisa aprender a impor agora",
-    "inveja disfarçada de conselho e preocupação com você",
-    "a verdade cruel sobre quem desaparece nas suas dificuldades",
-    "solidão voluntária como forma de cura e autoconhecimento",
-    "silêncio como resposta para quem não merece explicação",
-    "abandono que te ensinou a ser forte sozinho",
-    "trabalho duro e esforço que nunca é reconhecido pelos outros",
-    "mudança de vida que assusta porque exige perder o conforto",
-    "pessoas que drenam sua energia sem você perceber",
-    "a verdade sobre felicidade que os outros não querem que você saiba",
-    "ingratidão de quem você ajudou quando mais precisava",
-]
+# ── Categorias de temas para garantir variedade ───────────────────────────────
+# Cada categoria tem temas distintos. A rotação garante que vídeos consecutivos
+# nunca caiam na mesma emoção dominante.
+
+TEMAS_POR_CATEGORIA = {
+    "dores_emocionais": [
+        "ansiedade que não deixa você dormir e faz sua mente correr à noite",
+        "medo paralisante que impede você de dar o próximo passo",
+        "tristeza profunda que você carrega sem conseguir explicar para ninguém",
+        "insegurança que faz você duvidar de tudo o que você é",
+        "culpa que você ainda carrega por algo que já passou",
+        "arrependimento por escolhas que não podem mais ser desfeitas",
+        "cansaço da alma de quem já lutou muito e ainda não viu resultado",
+        "falta de esperança quando tudo parece escuro ao seu redor",
+        "sensação de estar completamente perdido sem saber o próximo passo",
+        "pessoas que sofrem em silêncio e sorriem por fora",
+    ],
+    "relacionamentos": [
+        "término de relacionamento que deixou uma ferida que não cicatriza",
+        "traição de alguém em quem você confiava com o coração aberto",
+        "solidão dentro de um relacionamento onde você se sente invisível",
+        "amor que você deu sem limite e não foi correspondido",
+        "rejeição que fez você acreditar que não é suficiente",
+        "decepção com pessoas que você achava que seriam para sempre",
+        "abandono de quem prometeu nunca te largar",
+        "amizades que desapareceram na hora mais difícil da sua vida",
+        "relacionamento tóxico do qual você não sabe como sair",
+        "perdão de quem te machucou profundamente mas você ainda ama",
+    ],
+    "fe_e_espera": [
+        "espera pela resposta de Deus que parece não chegar",
+        "silêncio de Deus nos momentos em que você mais precisava ouvir",
+        "oração que você fez com fé e ainda não foi respondida",
+        "dúvida sobre se Deus realmente ouve você",
+        "portas fechadas que fizeram você questionar seu propósito",
+        "fé abalada por situações que você não consegue entender",
+        "confiança em Deus mesmo quando a vida não faz sentido",
+        "perseverança quando tudo parece dizer para você desistir",
+        "sinal de Deus que você está pedindo e esperando",
+        "paz que ultrapassa o entendimento nos momentos mais difíceis",
+    ],
+    "familia_e_filhos": [
+        "família desestruturada que deixou marcas na sua vida",
+        "filhos que se afastaram e partiram o coração dos pais",
+        "casamento que está passando por uma crise profunda",
+        "desejo de ter um filho que ainda não chegou",
+        "pais que não souberam expressar amor e deixaram feridas",
+        "reconciliação com um familiar com quem você perdeu o contato",
+        "proteção dos filhos em um mundo que parece cada vez mais perigoso",
+        "mãe ou pai que está doente e você não sabe o que fazer",
+        "família unida pela fé mesmo diante das dificuldades",
+        "herança de amor que você quer deixar para seus filhos",
+    ],
+    "superacao_e_recomecos": [
+        "recomeço depois de perder tudo o que você havia construído",
+        "sonhos frustrados que você não sabe se ainda vale a pena ter",
+        "segunda chance que Deus oferece para quem já errou muito",
+        "levantando depois de uma queda que parecia definitiva",
+        "novo começo quando tudo que era familiar ficou para trás",
+        "superação de uma doença que mudou tudo na sua vida",
+        "batalha contra vícios que você não consegue vencer sozinho",
+        "força para continuar quando todas as forças já se esgotaram",
+        "identidade que você perdeu e está tentando encontrar novamente",
+        "vitória que está chegando mesmo que você ainda não consiga ver",
+    ],
+    "noite_e_crise": [
+        "noites difíceis em que você chora sem conseguir parar",
+        "crise financeira que tirou o sono e a paz da sua família",
+        "momento em que você pensou em desistir de tudo",
+        "perda de emprego que abalou sua fé e sua esperança",
+        "dívidas que parecem uma montanha impossível de escalar",
+        "doença que chegou de repente e mudou todos os planos",
+        "luto por alguém que partiu cedo demais",
+        "situação sem saída que só Deus pode resolver",
+        "tempestade que está passando mas que parece que não vai acabar",
+        "desespero às três da manhã quando o mundo parece dormir",
+    ],
+    "gratidao_e_bencaos": [
+        "gratidão por ter sobrevivido a uma fase que quase te destruiu",
+        "milagre silencioso que Deus fez na sua vida sem você perceber",
+        "bênção disfarçada de dificuldade que só mais tarde você entendeu",
+        "proteção que Deus exerceu sobre você sem você saber",
+        "livramento de algo ruim que poderia ter acontecido",
+        "momento em que Deus surpreendeu quando você menos esperava",
+        "abundância que chegou depois de um longo tempo de escassez",
+        "porta que Deus abriu quando todas as outras foram fechadas",
+        "saúde restaurada depois de uma batalha que parecia impossível",
+        "gratidão pelas pequenas coisas que você aprendeu a valorizar",
+    ],
+    "proposito_e_identidade": [
+        "propósito de vida que você ainda não encontrou e isso te angustia",
+        "talentos que Deus colocou em você e que você ainda não usou",
+        "chamado de Deus que você está ignorando por medo",
+        "quem você é de verdade além dos seus erros e fracassos",
+        "missão que foi colocada em sua vida antes mesmo de você nascer",
+        "comparação com os outros que rouba a alegria da sua jornada",
+        "autoestima destruída que Jesus quer restaurar completamente",
+        "valor que você tem aos olhos de Deus mesmo sem sentir isso",
+        "legado que você vai deixar quando não estiver mais aqui",
+        "versão de você mesmo que Deus ainda está moldando e preparando",
+    ],
+}
+
+# Lista plana de todos os temas para controle de uso
+TEMAS_BASE = [tema for cat in TEMAS_POR_CATEGORIA.values() for tema in cat]
+
+CATEGORIAS_FILE = Path(__file__).parent.parent / "categoria_atual.json"
+
+
+def _carregar_categoria_atual() -> str:
+    """Retorna a próxima categoria a ser usada, rotacionando entre todas."""
+    categorias = list(TEMAS_POR_CATEGORIA.keys())
+    if CATEGORIAS_FILE.exists():
+        with open(CATEGORIAS_FILE, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        idx_atual = data.get("idx", 0)
+    else:
+        idx_atual = 0
+    proximo_idx = (idx_atual + 1) % len(categorias)
+    with open(CATEGORIAS_FILE, "w", encoding="utf-8") as f:
+        json.dump({"idx": proximo_idx}, f)
+    return categorias[idx_atual]
+
 
 # ── Prompt Mestre ─────────────────────────────────────────────────────────────
 SYSTEM_PROMPT = """# PROMPT MESTRE — CRIADOR DE ROTEIROS VIRAIS DE JESUS PARA VÍDEOS CURTOS
@@ -254,14 +355,33 @@ def salvar_tema_usado(tema: str) -> None:
 
 
 def escolher_tema() -> str:
+    """
+    Escolhe um tema respeitando 2 regras:
+    1. ROTAÇÃO DE CATEGORIA: cada vídeo usa uma categoria diferente da anterior
+       (dores_emocionais → relacionamentos → fe_e_espera → familia_e_filhos → ...)
+       para garantir que nunca haverá 2 vídeos seguidos do mesmo perfil emocional.
+    2. CONTROLE DE REPETIÇÃO: dentro da categoria, prefere temas ainda não usados.
+    """
     usados = carregar_temas_usados()
-    disponiveis = [t for t in TEMAS_BASE if t not in usados]
-    if not disponiveis:
+    categoria = _carregar_categoria_atual()
+    temas_cat = TEMAS_POR_CATEGORIA.get(categoria, TEMAS_BASE)
+
+    # Temas disponíveis dentro da categoria atual
+    disponiveis_na_cat = [t for t in temas_cat if t not in usados]
+
+    # Se todos da categoria já foram usados, usa qualquer da categoria mesmo assim
+    if not disponiveis_na_cat:
+        disponiveis_na_cat = temas_cat
+
+    # Fallback geral: se a categoria estiver completamente vazia, usa qualquer disponível
+    disponiveis_geral = [t for t in TEMAS_BASE if t not in usados]
+    if not disponiveis_geral:
         with open(TEMAS_FILE, "w", encoding="utf-8") as f:
             json.dump([], f)
-        disponiveis = TEMAS_BASE
-    tema = random.choice(disponiveis)
-    print(f"Tema escolhido: {tema}")
+        disponiveis_geral = TEMAS_BASE
+
+    tema = random.choice(disponiveis_na_cat)
+    print(f"Categoria: '{categoria}' | Tema escolhido: {tema}")
     return tema
 
 
