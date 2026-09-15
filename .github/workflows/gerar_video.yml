@@ -110,12 +110,10 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          # Salva ambos os arquivos de controle
-          git add temas_usados.json
-          # pexels_usados.json pode não existir se o pipeline falhou cedo
-          [ -f pexels_usados.json ] && git add pexels_usados.json || true
+          # Salva todos os arquivos de controle JSON
+          git add *.json || true
           git diff --cached --quiet && echo "Sem mudancas" || \
-            git commit -m "Atualiza controle de temas e clips Pexels [skip ci]"
+            git commit -m "Atualiza controle de temas e memória [skip ci]"
           git push || echo "Nada para enviar"
 
       # ── 8. Upload como artefato (backup) ──────────────────────────────────

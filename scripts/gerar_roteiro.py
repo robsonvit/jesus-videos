@@ -356,32 +356,32 @@ def salvar_tema_usado(tema: str) -> None:
 
 def escolher_tema() -> str:
     """
-    Escolhe um tema respeitando 2 regras:
-    1. ROTAÇÃO DE CATEGORIA: cada vídeo usa uma categoria diferente da anterior
-       (dores_emocionais → relacionamentos → fe_e_espera → familia_e_filhos → ...)
-       para garantir que nunca haverá 2 vídeos seguidos do mesmo perfil emocional.
-    2. CONTROLE DE REPETIÇÃO: dentro da categoria, prefere temas ainda não usados.
+    Escolhe um tema garantindo que NENHUM tema será repetido até que todos
+    os temas de todas as categorias tenham sido utilizados.
     """
     usados = carregar_temas_usados()
-    categoria = _carregar_categoria_atual()
-    temas_cat = TEMAS_POR_CATEGORIA.get(categoria, TEMAS_BASE)
-
-    # Temas disponíveis dentro da categoria atual
-    disponiveis_na_cat = [t for t in temas_cat if t not in usados]
-
-    # Se todos da categoria já foram usados, usa qualquer da categoria mesmo assim
-    if not disponiveis_na_cat:
-        disponiveis_na_cat = temas_cat
-
-    # Fallback geral: se a categoria estiver completamente vazia, usa qualquer disponível
-    disponiveis_geral = [t for t in TEMAS_BASE if t not in usados]
-    if not disponiveis_geral:
+    
+    disponiveis = [t for t in TEMAS_BASE if t not in usados]
+    
+    if not disponiveis:
+        print("Todos os temas do projeto foram usados! Reiniciando a memória de temas.")
+        usados = []
         with open(TEMAS_FILE, "w", encoding="utf-8") as f:
             json.dump([], f)
-        disponiveis_geral = TEMAS_BASE
+        disponiveis = TEMAS_BASE
 
-    tema = random.choice(disponiveis_na_cat)
-    print(f"Categoria: '{categoria}' | Tema escolhido: {tema}")
+    categoria = _carregar_categoria_atual()
+    temas_cat = TEMAS_POR_CATEGORIA.get(categoria, TEMAS_BASE)
+    
+    disponiveis_na_cat = [t for t in disponiveis if t in temas_cat]
+    
+    if disponiveis_na_cat:
+        tema = random.choice(disponiveis_na_cat)
+        print(f"Categoria: '{categoria}' | Tema escolhido: {tema}")
+    else:
+        tema = random.choice(disponiveis)
+        print(f"Categoria original vazia. Tema aleatório escolhido: {tema}")
+        
     return tema
 
 
