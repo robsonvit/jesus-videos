@@ -409,9 +409,13 @@ def _extrair_json(content: str) -> dict:
     Extrai o JSON da resposta do modelo com múltiplas estratégias.
     Lida com modelos que retornam raciocínio, markdown ou texto extra.
     """
+    def is_valid(obj):
+        return isinstance(obj, dict) and "titulo" in obj and "roteiro_fala" in obj
+
     # Estratégia 1: parse direto
     try:
-        return json.loads(content.strip())
+        obj = json.loads(content.strip())
+        if is_valid(obj): return obj
     except json.JSONDecodeError:
         pass
 
@@ -419,7 +423,8 @@ def _extrair_json(content: str) -> dict:
     limpo = re.sub(r'```(?:json)?\s*', '', content)
     limpo = re.sub(r'```\s*', '', limpo)
     try:
-        return json.loads(limpo.strip())
+        obj = json.loads(limpo.strip())
+        if is_valid(obj): return obj
     except json.JSONDecodeError:
         pass
 
@@ -428,7 +433,7 @@ def _extrair_json(content: str) -> dict:
     for cand in sorted(candidatos, key=len, reverse=True):
         try:
             obj = json.loads(cand)
-            if "titulo" in obj and "roteiro_fala" in obj:
+            if is_valid(obj):
                 return obj
         except json.JSONDecodeError:
             continue
@@ -438,11 +443,12 @@ def _extrair_json(content: str) -> dict:
     ultimo = content.rfind('}')
     if primeiro != -1 and ultimo != -1 and ultimo > primeiro:
         try:
-            return json.loads(content[primeiro:ultimo + 1])
-        except json.JSONDecodeError as e:
-            raise ValueError(f"JSON inválido após todas as estratégias. Erro: {e}\nConteúdo: {content[:400]}")
+            obj = json.loads(content[primeiro:ultimo + 1])
+            if is_valid(obj): return obj
+        except json.JSONDecodeError:
+            pass
 
-    raise ValueError(f"Nenhum JSON encontrado. Conteúdo: {content[:400]}")
+    raise ValueError(f"Nenhum JSON contendo 'titulo' e 'roteiro_fala' foi encontrado. Conteúdo: {content[:400]}")
 
 
 # ── Geração de roteiro via OpenRouter ─────────────────────────────────────────

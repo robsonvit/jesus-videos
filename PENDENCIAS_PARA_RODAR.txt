@@ -1,0 +1,39 @@
+====================================================================
+           PENDÊNCIAS PARA O PROJETO JESUS RODAR NO GITHUB
+====================================================================
+
+Para que o bot comece a gerar e postar os vídeos do canal JESUS automaticamente pelo GitHub Actions, você precisa concluir os seguintes passos:
+
+1. ROTEIROS (scripts/gerar_roteiro.py):
+   - Atualizar a lista de "TEMAS_BASE" para refletir temas motivacionais cristãos/Jesus.
+   - Ajustar o "SYSTEM_PROMPT" para gerar roteiros no estilo desejado (ex: sem palavrões no gancho, tom mais sereno/espiritual em vez de bruto estilo Shelby).
+
+2. VOZ (scripts/gerar_voz.py):
+   - Escolher e configurar a voz correta.
+   - Se for usar Fish Audio, alterar o `FISH_VOICE_ID` para a voz desejada.
+   - Se for usar Kokoro, alterar `KOKORO_VOICE` para a voz em português que melhor se adeque.
+
+3. CENAS DE ABERTURA (Vídeos de 0 a 3 segundos):
+   - Criar uma pasta chamada "CLIPES INICIAIS" na raiz do projeto (c:\#1-CRIAÇÕES-AUTOMAÇÕES-EXTENSÕES\CRIAÇÃO VÍDEEOS JESUS\CLIPES INICIAIS).
+   - Colocar os arquivos .mp4 que serão usados como cena inicial (onde entra o Gancho).
+
+4. MÚSICAS DE FUNDO (Opcional):
+   - Colocar arquivos .mp3 na pasta "musicas" se quiser fundo musical.
+
+5. CREDENCIAIS DO YOUTUBE:
+   - Gerar o token de acesso para o canal JESUS.
+   - Preencher os valores no arquivo local "youtube_credentials.json" (usando o template .example como base).
+
+6. CONFIGURAR SECRETS NO GITHUB:
+   - Ir no repositório no GitHub (https://github.com/robsonvit/jesus-videos) -> Settings -> Secrets and variables -> Actions.
+   - Cadastrar as seguintes variáveis com os valores corretos:
+     * FISH_API_KEY (se for usar Fish Audio)
+     * OPENROUTER_API_KEY
+     * PEXELS_API_KEY
+     * TELEGRAM_BOT_TOKEN
+     * TELEGRAM_CHAT_ID
+     * YOUTUBE_CLIENT_ID
+     * YOUTUBE_CLIENT_SECRET
+     * YOUTUBE_REFRESH_TOKEN
+
+Após concluir esses passos e enviar os códigos ajustados pro GitHub (fazer o push), você poderá disparar o workflow "Gerar Vídeo JESUS" na aba Actions do GitHub ou deixar ele rodar automaticamente todos os dias.

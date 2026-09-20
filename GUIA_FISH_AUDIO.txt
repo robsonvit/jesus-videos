@@ -1,0 +1,54 @@
+================================================================================
+           COMO USAR A API DO FISH AUDIO CORRETAMENTE (E EVITAR ERROS)
+================================================================================
+
+Este guia foi criado após resolvermos os problemas de integração com a API do Fish Audio no projeto JESUS. Ele resume o que funciona e os "pulos do gato" que não estão tão claros na documentação.
+
+---
+1. O MISTÉRIO DOS CRÉDITOS (ERRO 402 - Insufficient API credit)
+---
+Se você receber o Erro 402, isso não significa que seu código está errado.
+Significa que a sua chave de API (API Key) esgotou.
+
+O Fish Audio tem dois sistemas de créditos SEPARADOS:
+- Créditos de Plataforma: Usados quando você entra no site deles, aperta botões e gera áudio pela interface web. (Eles costumam dar alguns grátis aqui).
+- Créditos de API: Usados quando você manda comandos via código Python.
+Mesmo que você tenha saldo no site, a API pode travar se você não colocar fundos específicos para desenvolvedores em: https://fish.audio/app/developers
+
+---
+2. O "PULO DO GATO" NA REQUISIÇÃO (MODELO NO CABEÇALHO)
+---
+Para usar o modelo gratuito / pro-free deles (como o "s2.1-pro-free"), a API deles exige que o nome do modelo seja passado DENTRO do Header (Cabeçalho) e não só no Payload.
+
+Se o seu código estiver falhando com "Invalid Model" ou cobranças indevidas, certifique-se de que o HEADER está assim:
+
+headers = {
+    "Authorization": f"Bearer {FISH_API_KEY}",
+    "Content-Type": "application/json",
+    "model": "s2.1-pro-free"  <--- ESSA LINHA É CRUCIAL!
+}
+
+---
+3. ESTRUTURA DO PAYLOAD
+---
+O envio do texto deve ser feito para: https://api.fish.audio/v1/tts
+
+O Payload (corpo da mensagem) ideal deve ser assim:
+payload = {
+    "text": "Seu texto aqui...",
+    "reference_id": "ID_DA_SUA_VOZ_AQUI",  # Ex: Voz do canal Jesus
+    "format": "mp3",
+    "mp3_bitrate": 192,
+    "normalize": True,
+    "latency": "normal"
+}
+
+---
+4. DICA DE OURO: SEMPRE TENHA UM "FALLBACK" (PLANO B)
+---
+APIs de voz gringas são instáveis e frequentemente bloqueiam contas gratuitas. 
+A melhor prática (como implementamos no script gerar_voz.py) é usar a estrutura try/except:
+
+1. O script tenta gerar pelo Fish Audio.
+2. Se o Fish der erro 402 (falta de crédito) ou 429 (rate limit)...
+3. O script intercepta a falha e aciona automaticamente o Kokoro TTS ou Edge TTS (modelos locais ou gratuitos) para garantir que o seu vídeo NUNCA deixe de ser postado.
