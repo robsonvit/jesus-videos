@@ -416,7 +416,7 @@ def montar_video(
         # amix: voz em 150%, música em 30%. duration=first → corta na narração
         audio_filter = (
             "[1:a]volume=1.50[voz];"
-            "[2:a]volume=0.30,atrim=duration=" + str(duracao_total) + "[bgm];"
+            "[2:a]volume=0.30[bgm];"
             "[voz][bgm]amix=inputs=2:duration=first:dropout_transition=0[aout]"
         )
         filter_final = filter_complex + f";{audio_filter}"
