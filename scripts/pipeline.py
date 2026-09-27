@@ -42,7 +42,7 @@ from enviar_telegram import enviar_video_telegram, enviar_mensagem_telegram
 PROJETO_ROOT = Path(__file__).parent.parent
 # ⬅️ PENDENTE: Criar pasta com os clipes de 0-3s (abertura do vídeo)
 CLIPES_INICIAIS_DIR = PROJETO_ROOT / "CENAS DE ABERTURA"
-MUSICAS_DIR = PROJETO_ROOT / "musicas"
+MUSICAS_DIR = PROJETO_ROOT / "MUSICAS DE FUNDO"
 OUTPUT_DIR = PROJETO_ROOT / "output"
 
 
