@@ -413,11 +413,12 @@ def montar_video(
             "-i", audio_file,
             "-i", musica_escolhida,
         ]
-        # amix: voz em 150%, música em 30%. duration=first → corta na narração
+        # amix com normalize=0 para o ffmpeg não reduzir os volumes pela metade
+        # loudnorm na voz para nivelar e encorpar a narração
         audio_filter = (
-            "[1:a]volume=1.50[voz];"
-            "[2:a]volume=0.30[bgm];"
-            "[voz][bgm]amix=inputs=2:duration=first:dropout_transition=0[aout]"
+            "[1:a]loudnorm,volume=1.50[voz];"
+            "[2:a]volume=0.10[bgm];"
+            "[voz][bgm]amix=inputs=2:duration=first:dropout_transition=0:normalize=0[aout]"
         )
         filter_final = filter_complex + f";{audio_filter}"
         audio_map = ["-map", "[aout]"]
