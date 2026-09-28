@@ -411,7 +411,7 @@ def montar_video(
         ffmpeg_inputs = [
             "-i", video_concat,
             "-i", audio_file,
-            "-stream_loop", "-1", "-t", str(duracao_total), "-i", musica_escolhida,
+            "-i", musica_escolhida,
         ]
         # amix: voz em 150%, música em 30%. duration=first → corta na narração
         audio_filter = (
