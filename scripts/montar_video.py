@@ -405,9 +405,9 @@ def montar_video(
     )
 
     # ── Monta áudio: narração pura OU narração + fundo 30% ────────────────────
-    # [FIX-5] Voz em 150% (Fish Audio é baixinho), música em 30%
+    # [FIX-5] Voz em 150% (Fish Audio é baixinho), música em 50%
     if musica_escolhida:
-        print("Mixando narracao + musica de fundo (voz 150%, fundo 30%)...")
+        print("Mixando narracao + musica de fundo (voz 150%, fundo 50%)...")
         ffmpeg_inputs = [
             "-i", video_concat,
             "-i", audio_file,
@@ -417,7 +417,7 @@ def montar_video(
         # loudnorm na voz para nivelar e encorpar a narração
         audio_filter = (
             "[1:a]loudnorm,volume=1.50[voz];"
-            "[2:a]volume=0.10[bgm];"
+            "[2:a]volume=0.50[bgm];"
             "[voz][bgm]amix=inputs=2:duration=first:dropout_transition=0:normalize=0[aout]"
         )
         filter_final = filter_complex + f";{audio_filter}"
