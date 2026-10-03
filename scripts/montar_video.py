@@ -305,10 +305,10 @@ def montar_video(
         target_clip = random.uniform(3.0, 6.0)
         
         # Como o xfade vai sobrepor XFADE_DURATION, este clip vai adicionar de fato (target_clip - XFADE_DURATION)
-        # Se (target_clip - XFADE_DURATION) for maior que o que falta, cortamos.
+        # Se (target_clip - XFADE_DURATION) for maior que o que falta, cortamos, mas garantimos um tamanho mínimo.
         add_efetivo = target_clip - XFADE_DURATION
         if add_efetivo > falta:
-            target_clip = falta + XFADE_DURATION
+            target_clip = max(falta + XFADE_DURATION, 1.0 + XFADE_DURATION)
         
         dur_clip = target_clip
 
