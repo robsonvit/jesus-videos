@@ -334,6 +334,9 @@ O final deve deixar uma sensação de paz, esperança ou emoção.
 
 # 19. FORMATO DE SAÍDA OBRIGATÓRIO EM JSON
 (Você receberá o comando de saída no user prompt).
+
+# 20. PROIBIÇÃO DE METADADOS NO TEXTO
+O campo 'roteiro_fala' deve conter EXCLUSIVAMENTE a mensagem de Jesus, começando direto com o gancho. É EXPRESSAMENTE PROIBIDO incluir textos como "Aqui está a narração", "Texto completo para narração:", ou qualquer tipo de instrução no valor do JSON.
 """
 
 # ── Controle de temas ─────────────────────────────────────────────────────────
@@ -482,7 +485,7 @@ SUA RESPOSTA INTEIRA DEVE COMEÇAR COM A CHAVE E TERMINAR COM A CHAVE.
 Retorne APENAS um JSON válido com esta estrutura exata (sem markdown, sem texto extra):
 {{
     "titulo": "TÍTULO EM MAIÚSCULAS — impactante e curto (máx 55 chars)",
-    "roteiro_fala": "Texto completo da narração. Frases curtas separadas por ponto. 100-140 palavras. Comece com o gancho forte.",
+    "roteiro_fala": "Apenas as palavras exatas da narração, sem meta-texto, sem avisos, direto para a fala.",
     "palavras_chave_pexels": ["english keyword 1", "english keyword 2", "english keyword 3", "english keyword 4"],
     "hashtags_tema": ["#palavrachave1", "#palavrachave2", "#palavrachave3"]
 }}
@@ -524,6 +527,24 @@ Para hashtags_tema, gere EXATAMENTE 3 hashtags em português (sem espaços, sem 
                 raise ValueError(f"{modelo} retornou conteúdo vazio")
 
             result = _extrair_json(content)
+            
+            # ── Limpeza e Validação de Alucinações ──
+            roteiro = result.get("roteiro_fala", "").strip()
+            roteiro_lower = roteiro.lower()
+            
+            # Se o modelo copiou partes do prompt de sistema ou user prompt
+            if "palavras exatas da narração" in roteiro_lower or "texto completo da narração" in roteiro_lower or "frases curtas" in roteiro_lower:
+                raise ValueError(f"{modelo} alucinou copiando as instruções no roteiro_fala.")
+            
+            # Remover introduções comuns geradas como erro
+            roteiro = re.sub(r'^(?i)(texto completo( da| p/| para)? narra\w*|roteiro( da narra\w*)?|narra\w*|aqui está.*?)\s*[:\-]\s*', '', roteiro).strip()
+            
+            if not roteiro:
+                raise ValueError(f"{modelo} gerou um roteiro vazio após a limpeza.")
+                
+            result["roteiro_fala"] = roteiro
+            # ────────────────────────────────────────
+
             print(f"  ✅ Roteiro gerado com sucesso via {modelo}")
             
             # Estratégia de velocidade: Move o modelo que funcionou para o topo da lista
