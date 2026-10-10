@@ -180,15 +180,12 @@ def enviar_instagram_reels(video_path: str, caption: str):
     return True
 
 def enviar_meta_completo(video_path: str, caption: str):
-    """Faz o envio para o Facebook e Instagram"""
-    print("\n🌐 Iniciando postagem no Meta (Facebook e Instagram) para 'Enfermagem Curiosa'...")
-    # Add @todos as requested
-    caption_com_todos = f"@todos\n\n{caption}"
+    """Faz o envio para o Facebook"""
+    print("\n🌐 Iniciando postagem no Meta (Facebook) para 'Enfermagem Curiosa'...")
+    # Add @seguidores as requested
+    caption_com_todos = f"@seguidores\n\n{caption}"
     
     # Facebook
     enviar_facebook_reels(video_path, caption_com_todos)
     
-    # Instagram
-    # No Instagram @todos does not trigger everyone natively like FB, but user requested it so we add.
-    enviar_instagram_reels(video_path, caption_com_todos)
     print("✅ Processo Meta finalizado.")
