@@ -12,33 +12,16 @@ import sys
 import re
 from pathlib import Path
 from openai import OpenAI
+from buscar_modelos_openrouter import buscar_modelos_gratuitos
 
 # ── Configurações OpenRouter ───────────────────────────────────────────────────
 OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "")
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 
-# Modelos gratuitos em ordem de preferência — sufixo :free = sem custo
-# Lista atualizada em 29/08/2026 via API do OpenRouter
-MODELOS_GRATUITOS = [
-    "minimax/minimax-m3:free",
-    "google/gemma-4-31b-it:free",
-    "google/gemma-4-26b-a4b-it:free",
-    "minimax/minimax-m2.7:free",
-    "nvidia/nemotron-3.5-lightning:free",
-    "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
-    "nvidia/nemotron-3-super-120b-a12b:free",
-    "nvidia/nemotron-3-ultra-550b-a55b:free",
-    "liquid/lfm-2.5-2.6b:free",
-    "poolside/laguna-s-2.1:free",
-    "poolside/laguna-xs-2.1:free",
-    "z-ai/glm-5.2:free",
-    "thinkingmachines/inkling:free",
-    "thinkingmachines/inkling-small:free",
-    "inclusionai/ling-3.0-flash-fin:free",
-    "dots-studio/dots-3-note-preview:free",
-    "cohere/north-mini-code:free",
-    "openrouter/free"
-]
+# Modelos gratuitos: buscados dinamicamente via API do OpenRouter em tempo de execução.
+# A lista é atualizada automaticamente a cada run (cache de 6h).
+# Para forçar atualização: deletar o arquivo modelos_cache.json na raiz do projeto.
+MODELOS_GRATUITOS = []  # Será preenchido em gerar_roteiro() via buscar_modelos_gratuitos()
 
 TEMAS_FILE = Path(__file__).parent.parent / "temas_usados.json"
 HISTORICO_FILE = Path(__file__).parent.parent / "historico_ganchos.json"
@@ -458,11 +441,18 @@ def _extrair_json(content: str) -> dict:
 def gerar_roteiro(tema: str) -> dict:
     """
     Gera o roteiro viral via OpenRouter usando modelos gratuitos.
-    Tenta cada modelo da lista em ordem até um funcionar.
+    Busca dinamicamente a lista de modelos disponíveis na API do OpenRouter.
+    Tenta cada modelo em ordem até um funcionar.
     """
     global MODELOS_GRATUITOS
     if not OPENROUTER_API_KEY:
         raise RuntimeError("OPENROUTER_API_KEY não definida!")
+
+    # Busca modelos gratuitos atuais (com cache de 6h para não sobrecarregar a API)
+    if not MODELOS_GRATUITOS:
+        print("Carregando lista de modelos gratuitos do OpenRouter...")
+        MODELOS_GRATUITOS = buscar_modelos_gratuitos(OPENROUTER_API_KEY)
+        print(f"Total de modelos disponíveis: {len(MODELOS_GRATUITOS)}")
 
     client = OpenAI(
         api_key=OPENROUTER_API_KEY,
