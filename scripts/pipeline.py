@@ -37,6 +37,7 @@ from buscar_videos_pexels import buscar_videos
 from montar_video import montar_video, get_media_duration, SHELBY_CLIP_DURATION
 from enviar_telegram import enviar_video_telegram, enviar_mensagem_telegram
 from enviar_youtube import enviar_video_youtube
+from enviar_meta import enviar_meta_completo
 
 
 # ── Paths do projeto ────────────────────────────────────────────────────────────────
@@ -143,7 +144,7 @@ def executar_pipeline(numero: int = 1) -> bool:
         enviar_video_telegram(output_final, caption)
         print("  ✅ Vídeo enviado ao Telegram com sucesso!")
 
-        print("\n▶️ [7/7] Enviando ao YouTube (Shorts)...")
+        print("\n▶️ [7/8] Enviando ao YouTube (Shorts)...")
         yt_titulo = f"{roteiro['titulo'][:85]} #shorts"
         yt_desc = f"{roteiro['titulo']}\n\n{roteiro['hashtags']}"
         yt_tags = [tag.strip('#') for tag in roteiro['hashtags'].split() if tag.startswith('#')]
@@ -154,6 +155,15 @@ def executar_pipeline(numero: int = 1) -> bool:
         except Exception as yt_err:
             print(f"  ❌ Erro ao enviar para o YouTube: {yt_err}")
             enviar_mensagem_telegram(f"⚠️ Erro ao postar no YouTube:\n<code>{yt_err}</code>")
+
+        print("\n🌐 [8/8] Enviando ao Meta (Facebook e Instagram)...")
+        try:
+            meta_caption = f"{roteiro['titulo']}\n\n{roteiro['hashtags']}"
+            enviar_meta_completo(video_path=output_final, caption=meta_caption)
+            enviar_mensagem_telegram(f"✅ <b>Vídeo postado no Facebook e Instagram!</b>")
+        except Exception as meta_err:
+            print(f"  ❌ Erro ao enviar para o Meta: {meta_err}")
+            enviar_mensagem_telegram(f"⚠️ Erro ao postar no Meta:\n<code>{meta_err}</code>")
 
         # ── Salva o tema usado ────────────────────────────────────────────
         salvar_tema_usado(tema)
