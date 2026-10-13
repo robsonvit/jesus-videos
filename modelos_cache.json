@@ -1,10 +1,9 @@
 {
-  "timestamp": 1791905915.9183114,
+  "timestamp": 1791934581.8637617,
   "modelos": [
     "nvidia/nemotron-3.5-lightning:free",
     "nvidia/nemotron-3-ultra-550b-a55b:free",
     "dots-studio/dots-3-note-preview:free",
-    "apodex/apodex-1.1-mini:free",
     "poolside/laguna-s-2.1:free",
     "poolside/laguna-xs-2.1:free",
     "google/gemma-4-26b-a4b-it:free",
