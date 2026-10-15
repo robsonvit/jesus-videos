@@ -39,6 +39,12 @@ from enviar_telegram import enviar_video_telegram, enviar_mensagem_telegram
 from enviar_youtube import enviar_video_youtube
 from enviar_meta import enviar_meta_completo
 
+# ── Validação antecipada de variáveis de ambiente obrigatórias ─────────────────
+_REQUIRED_ENVS = ["OPENROUTER_API_KEY", "PEXELS_API_KEY", "TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID"]
+_missing = [k for k in _REQUIRED_ENVS if not os.environ.get(k)]
+if _missing:
+    raise RuntimeError(f"❌ Variáveis de ambiente obrigatórias não configuradas: {', '.join(_missing)}")
+
 
 # ── Paths do projeto ────────────────────────────────────────────────────────────────
 PROJETO_ROOT = Path(__file__).parent.parent
@@ -156,14 +162,14 @@ def executar_pipeline(numero: int = 1) -> bool:
             print(f"  ❌ Erro ao enviar para o YouTube: {yt_err}")
             enviar_mensagem_telegram(f"⚠️ Erro ao postar no YouTube:\n<code>{yt_err}</code>")
 
-        print("\n🌐 [8/8] Enviando ao Meta (Facebook e Instagram)...")
+        print("\n🌐 [8/8] Enviando ao Facebook...")
         try:
             meta_caption = f"{roteiro['titulo']}\n\n{roteiro['hashtags']}"
             enviar_meta_completo(video_path=output_final, caption=meta_caption)
-            enviar_mensagem_telegram(f"✅ <b>Vídeo postado no Facebook e Instagram!</b>")
+            enviar_mensagem_telegram(f"✅ <b>Vídeo postado no Facebook!</b>")
         except Exception as meta_err:
-            print(f"  ❌ Erro ao enviar para o Meta: {meta_err}")
-            enviar_mensagem_telegram(f"⚠️ Erro ao postar no Meta:\n<code>{meta_err}</code>")
+            print(f"  ❌ Erro ao enviar para o Facebook: {meta_err}")
+            enviar_mensagem_telegram(f"⚠️ Erro ao postar no Facebook:\n<code>{meta_err}</code>")
 
         # ── Salva o tema usado ────────────────────────────────────────────
         salvar_tema_usado(tema)
