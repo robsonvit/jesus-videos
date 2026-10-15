@@ -5,11 +5,12 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Configurações do Meta (Enfermagem Curiosa)
-USER_ACCESS_TOKEN = "EAAdxhP3IqDABSirjI6y40XZCED3kVz6GzNAlxWzKGq5wzA66ALKAE6qr2Y1HoGN5ccLo8ZAu9Cv0r3rGakRD0W9KtCcH9O4JQYtolZCZCpx3tyhwZBqtRyvr0obZAZBVpZCiWcbszZCZBLnyY4p2mBpQ8YQJgQAfu1RqK2t5ZB9ZBOjPOOUqAsHPS4m0ZC6OZB77c4"
-PAGE_ACCESS_TOKEN = "EAAdxhP3IqDABSlpygZAG2LJaLKjmGUbgyLlJeAAbFZBUNirBbMqoV9MVNFpKeHxsfBeZB0iNEji2sCOuPLHntrZCA4yp4raQY5xkuw92i0rw76CTsZAStZCwpTeoUVn6dawnMvNCrlgWunTURSiByG79CNwhyZAxtxOs0PJ9Qf0eqbNiH2sBK35a49sszOEpJ6xZBgsIDAsZD"
-FB_PAGE_ID = "101746485343968"
-IG_ACCOUNT_ID = "17841446226605429"
+# Configurações do Meta — lidas de variáveis de ambiente / GitHub Secrets
+# Configure no GitHub: Settings → Secrets → Actions
+USER_ACCESS_TOKEN = os.environ.get("META_USER_ACCESS_TOKEN", "")
+PAGE_ACCESS_TOKEN = os.environ.get("META_PAGE_ACCESS_TOKEN", "")
+FB_PAGE_ID        = os.environ.get("META_FB_PAGE_ID", "")
+IG_ACCOUNT_ID     = os.environ.get("META_IG_ACCOUNT_ID", "")
 GRAPH_API_VERSION = "v18.0"
 BASE_URL = f"https://graph.facebook.com/{GRAPH_API_VERSION}"
 
@@ -75,9 +76,13 @@ def _check_status(container_id, platform="ig"):
     return False
 
 def enviar_facebook_reels(video_path: str, caption: str):
+    if not PAGE_ACCESS_TOKEN or not FB_PAGE_ID:
+        print("⚠️  META_PAGE_ACCESS_TOKEN ou META_FB_PAGE_ID não configurados — pulando Facebook.")
+        return False
+
     print(f"Iniciando envio para Facebook Page Reels: {video_path}")
     file_size = os.path.getsize(video_path)
-    
+
     # 1. Initialize session
     init_url = f"{BASE_URL}/{FB_PAGE_ID}/video_reels"
     init_payload = {
@@ -86,25 +91,29 @@ def enviar_facebook_reels(video_path: str, caption: str):
         'file_size': file_size
     }
     init_res = requests.post(init_url, data=init_payload).json()
-    
+
     if 'video_id' not in init_res:
         print(f"❌ Erro ao iniciar sessão FB: {init_res}")
         return False
-        
+
     video_id = init_res['video_id']
     upload_url = init_res['upload_url']
-    
+
     # 2. Enviar arquivo
     headers = {
         'Authorization': f'OAuth {PAGE_ACCESS_TOKEN}',
         'offset': '0',
         'file_size': str(file_size)
     }
-    
+
     with open(video_path, 'rb') as f:
         video_data = f.read()
-        
-    requests.post(upload_url, headers=headers, data=video_data)
+
+    # Verifica resposta do upload (falha silenciosa anterior corrigida)
+    upload_resp = requests.post(upload_url, headers=headers, data=video_data)
+    if upload_resp.status_code not in (200, 201):
+        print(f"  ❌ Falha no upload do arquivo FB: {upload_resp.status_code} {upload_resp.text[:300]}")
+        return False
     
     # 3. Check status
     print("Arquivo enviado (FB). Aguardando processamento da Meta...")
@@ -180,12 +189,10 @@ def enviar_instagram_reels(video_path: str, caption: str):
     return True
 
 def enviar_meta_completo(video_path: str, caption: str):
-    """Faz o envio para o Facebook"""
-    print("\n🌐 Iniciando postagem no Meta (Facebook) para 'Enfermagem Curiosa'...")
-    # Add @seguidores as requested
-    caption_com_todos = f"@seguidores\n\n{caption}"
-    
-    # Facebook
-    enviar_facebook_reels(video_path, caption_com_todos)
-    
+    """Faz o envio para o Facebook (Instagram desativado)."""
+    print("\n🌐 Iniciando postagem no Facebook...")
+    caption_com_seguidores = f"@seguidores\n\n{caption}"
+
+    enviar_facebook_reels(video_path, caption_com_seguidores)
+
     print("✅ Processo Meta finalizado.")

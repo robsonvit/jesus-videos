@@ -79,44 +79,55 @@ jobs:
           ls -lh models/
           echo "Modelos OK"
 
-      # ── 5. Dependências Python ────────────────────────────────────────────
+      # ── 5. Cache do modelo Whisper (evita baixar ~75MB toda vez) ──────────
+      - name: 📦 Cache modelo Whisper
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface/hub
+          key: whisper-base-v1
+
+      # ── 6. Dependências Python ────────────────────────────────────────────
       - name: 📦 Instalar dependências Python
         run: |
           pip install --upgrade pip -q
           pip install -r requirements.txt -q
           echo "Dependências instaladas"
 
-      # ── 6. Pipeline de vídeo ──────────────────────────────────────────────
+      # ── 7. Pipeline de vídeo ──────────────────────────────────────────────
       - name: 🚀 Executar pipeline de vídeo
         env:
-          FISH_API_KEY:         ${{ secrets.FISH_API_KEY }}
-          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
-          GROK_API_KEY:         ${{ secrets.GROK_API_KEY }}
-          PEXELS_API_KEY:       ${{ secrets.PEXELS_API_KEY }}
-          TELEGRAM_BOT_TOKEN:   ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID:     ${{ secrets.TELEGRAM_CHAT_ID }}
-          YOUTUBE_CLIENT_ID:    ${{ secrets.YOUTUBE_CLIENT_ID }}
-          YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
-          YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
-          KOKORO_MODELS_DIR:    models
+          FISH_API_KEY:            ${{ secrets.FISH_API_KEY }}
+          OPENROUTER_API_KEY:      ${{ secrets.OPENROUTER_API_KEY }}
+          GROK_API_KEY:            ${{ secrets.GROK_API_KEY }}
+          PEXELS_API_KEY:          ${{ secrets.PEXELS_API_KEY }}
+          TELEGRAM_BOT_TOKEN:      ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID:        ${{ secrets.TELEGRAM_CHAT_ID }}
+          YOUTUBE_CLIENT_ID:       ${{ secrets.YOUTUBE_CLIENT_ID }}
+          YOUTUBE_CLIENT_SECRET:   ${{ secrets.YOUTUBE_CLIENT_SECRET }}
+          YOUTUBE_REFRESH_TOKEN:   ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
+          META_USER_ACCESS_TOKEN:  ${{ secrets.META_USER_ACCESS_TOKEN }}
+          META_PAGE_ACCESS_TOKEN:  ${{ secrets.META_PAGE_ACCESS_TOKEN }}
+          META_FB_PAGE_ID:         ${{ secrets.META_FB_PAGE_ID }}
+          META_IG_ACCOUNT_ID:      ${{ secrets.META_IG_ACCOUNT_ID }}
+          KOKORO_MODELS_DIR:       models
         run: |
           NUM_VIDEOS="${{ github.event.inputs.num_videos || '1' }}"
           echo "Gerando $NUM_VIDEOS video(s)..."
           python scripts/pipeline.py "$NUM_VIDEOS"
 
-      # ── 7. Salva temas usados + histórico Pexels ─────────────────────────
+      # ── 8. Salva temas usados + histórico Pexels ─────────────────────────
       - name: 💾 Salvar temas e histórico de clips Pexels
         if: always()
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          # Salva todos os arquivos de controle JSON
-          git add *.json || true
+          # Salva apenas os arquivos de controle de estado (exclui caches)
+          git add temas_usados.json categoria_atual.json pexels_usados.json historico_ganchos.json || true
           git diff --cached --quiet && echo "Sem mudancas" || \
             git commit -m "Atualiza controle de temas e memória [skip ci]"
-          git push || echo "Nada para enviar"
+          git push || (git pull --rebase origin main && git push)
 
-      # ── 8. Upload como artefato (backup) ──────────────────────────────────
+      # ── 9. Upload como artefato (backup) ──────────────────────────────────
       - name: 📤 Upload vídeo como artefato
         if: always()
         uses: actions/upload-artifact@v4

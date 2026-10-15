@@ -27,7 +27,7 @@ VIDEO_WIDTH  = 1080
 VIDEO_HEIGHT = 1920
 SHELBY_CLIP_DURATION = 4.0   # Segundos do clip de abertura (CLIPES INICIAIS)
 XFADE_DURATION       = 1.0   # Duração da transição suave entre clips (crossfade)
-import os
+MAX_CLIPS_PEXELS     = 60    # Guarda contra loop infinito na montagem
 # Caminho da fonte (usado pelo drawtext) - adaptado para rodar local (Windows) e no Github Actions (Linux)
 if os.name == 'nt':
     FONT_FILE = r"C\:/Windows/Fonts/impact.ttf"
@@ -285,7 +285,7 @@ def montar_video(
     pexels_ordem = pexels_clips[:]
     random.shuffle(pexels_ordem)
 
-    while duracao_total_atual < duracao_alvo:
+    while duracao_total_atual < duracao_alvo and idx < MAX_CLIPS_PEXELS:
         # Ao completar uma volta na lista, embaralha com seed diferente
         lista_idx = idx % len(pexels_ordem)
         if lista_idx == 0 and idx > 0:
@@ -335,6 +335,8 @@ def montar_video(
         duracao_total_atual += (dur_clip - XFADE_DURATION)
         idx += 1
 
+    if idx >= MAX_CLIPS_PEXELS:
+        print(f"  ⚠️  Limite de {MAX_CLIPS_PEXELS} clips atingido — usando duração atual")
     duracao_total = duracao_total_atual
     print(f"  {len(pexels_processados)} clips Pexels (Timeline total atingiu {duracao_total:.1f}s)")
 
@@ -390,7 +392,7 @@ def montar_video(
     # ── 6. Monta vídeo final com legendas + efeitos ───────────────────────────
     print("\nGerando filtro de legendas (drawtext)...")
     legenda_filter = gerar_filtro_legendas(
-        word_timings=word_timings,
+        word_timings=word_timings,  # timestamps via faster-whisper local
         font_file=FONT_FILE,
     )
 
