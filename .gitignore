@@ -15,3 +15,4 @@ voz_sample_*.wav
 gerar_amostras_voz.py
 youtube_credentials.json
 modelos_cache.json
+.vscode/
