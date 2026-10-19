@@ -188,11 +188,12 @@ def enviar_instagram_reels(video_path: str, caption: str):
     print(f"✅ REEL PUBLICADO NO INSTAGRAM! Media ID: {media_id}")
     return True
 
-def enviar_meta_completo(video_path: str, caption: str):
+def enviar_meta_completo(video_path: str, caption: str) -> bool:
     """Faz o envio para o Facebook (Instagram desativado)."""
     print("\n🌐 Iniciando postagem no Facebook...")
     caption_com_seguidores = f"@seguidores\n\n{caption}"
 
-    enviar_facebook_reels(video_path, caption_com_seguidores)
+    sucesso = enviar_facebook_reels(video_path, caption_com_seguidores)
 
     print("✅ Processo Meta finalizado.")
+    return bool(sucesso)

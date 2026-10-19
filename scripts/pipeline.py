@@ -165,8 +165,12 @@ def executar_pipeline(numero: int = 1) -> bool:
         print("\n🌐 [8/8] Enviando ao Facebook...")
         try:
             meta_caption = f"{roteiro['titulo']}\n\n{roteiro['hashtags']}"
-            enviar_meta_completo(video_path=output_final, caption=meta_caption)
-            enviar_mensagem_telegram(f"✅ <b>Vídeo postado no Facebook!</b>")
+            sucesso_meta = enviar_meta_completo(video_path=output_final, caption=meta_caption)
+            if sucesso_meta:
+                enviar_mensagem_telegram(f"✅ <b>Vídeo postado no Facebook!</b>")
+            else:
+                print("  ⚠️ Envio ao Facebook não foi concluído com sucesso.")
+                enviar_mensagem_telegram(f"⚠️ <b>Aviso Facebook:</b> Vídeo não foi postado (verifique os logs)")
         except Exception as meta_err:
             print(f"  ❌ Erro ao enviar para o Facebook: {meta_err}")
             enviar_mensagem_telegram(f"⚠️ Erro ao postar no Facebook:\n<code>{meta_err}</code>")
