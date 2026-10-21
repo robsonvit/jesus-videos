@@ -52,7 +52,8 @@ def obter_access_token() -> str:
         "refresh_token": refresh_token,
         "grant_type": "refresh_token",
     })
-    resp.raise_for_status()
+    if not resp.ok:
+        raise Exception(f"Falha ao renovar token do YouTube ({resp.status_code}): {resp.text}")
     token = resp.json().get("access_token")
     if not token:
         raise ValueError(f"Falha ao obter access_token: {resp.text}")
@@ -155,13 +156,20 @@ def enviar_video_youtube(video_path: str, titulo: str, descricao: str, tags: lis
         },
     }
 
-    # Iniciar upload resumível
-    init_resp = requests.post(
-        f"{YT_UPLOAD_URL}?uploadType=resumable&part=snippet,status",
-        headers=headers_init,
-        json=metadata,
-    )
-    init_resp.raise_for_status()
+    if not init_resp.ok:
+        try:
+            err_data = init_resp.json()
+            err_msg = err_data.get("error", {}).get("message", init_resp.text)
+            err_errors = err_data.get("error", {}).get("errors", [])
+            err_reason = err_errors[0].get("reason", "") if err_errors else ""
+            if err_reason == "uploadLimitExceeded":
+                raise Exception(f"Limite diário de uploads atingido no canal do YouTube (uploadLimitExceeded). O YouTube limita a quantidade de vídeos/Shorts por dia para evitar spam. Tente novamente mais tarde.")
+            raise Exception(f"Erro na API do YouTube ({init_resp.status_code}) [{err_reason}]: {err_msg}")
+        except Exception as e:
+            if "uploadLimitExceeded" in str(e) or "Erro na API do YouTube" in str(e):
+                raise
+            raise Exception(f"Erro ao iniciar upload no YouTube ({init_resp.status_code}): {init_resp.text}")
+
     upload_url = init_resp.headers["Location"]
     print("  ✓ URL de upload obtida.")
 
