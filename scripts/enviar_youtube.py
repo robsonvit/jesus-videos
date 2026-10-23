@@ -156,6 +156,13 @@ def enviar_video_youtube(video_path: str, titulo: str, descricao: str, tags: lis
         },
     }
 
+    # Iniciar upload resumível
+    init_resp = requests.post(
+        f"{YT_UPLOAD_URL}?uploadType=resumable&part=snippet,status",
+        headers=headers_init,
+        json=metadata,
+    )
+
     if not init_resp.ok:
         try:
             err_data = init_resp.json()
