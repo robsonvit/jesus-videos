@@ -382,12 +382,18 @@ def montar_video(
     # ── 5. Música de fundo (opcional) ────────────────────────────────────────
     musica_escolhida = ""
     if musicas_dir:
-        musicas_disponiveis = sorted(Path(musicas_dir).glob("*.mp3"))
+        musicas_dir_path = Path(musicas_dir)
+        print(f"\n[Musica] Pasta configurada: {musicas_dir_path}")
+        print(f"[Musica] Pasta existe: {musicas_dir_path.exists()}")
+        musicas_disponiveis = sorted(musicas_dir_path.glob("*.mp3"))
+        print(f"[Musica] Total de .mp3 encontrados: {len(musicas_disponiveis)}")
         if musicas_disponiveis:
             musica_escolhida = str(random.choice(musicas_disponiveis))
-            print(f"\n[Musica] Escolhida: {Path(musica_escolhida).name}")
+            print(f"[Musica] Escolhida: {Path(musica_escolhida).name}")
         else:
-            print(f"\n[Musica] Nenhum .mp3 encontrado em {musicas_dir} — sem fundo.")
+            print(f"[Musica] AVISO: Nenhum .mp3 encontrado em '{musicas_dir}' — video sem fundo musical.")
+    else:
+        print("\n[Musica] musicas_dir nao fornecido — video sem fundo musical.")
 
     # ── 6. Monta vídeo final com legendas + efeitos ───────────────────────────
     print("\nGerando filtro de legendas (drawtext)...")
@@ -418,9 +424,10 @@ def montar_video(
         # amix com normalize=0 para o ffmpeg não reduzir os volumes pela metade
         # loudnorm na voz para nivelar e encorpar a narração
         # loudnorm na música para normalizar o ganho de qualquer faixa + volume=0.12 para trilha suave que não ofusca a voz
+        # [FIX-5] volume simples no BGM: mais estavel que loudnorm com stream_loop infinito
         audio_filter = (
             "[1:a]loudnorm,volume=1.50[voz];"
-            "[2:a]loudnorm,volume=0.12[bgm];"
+            "[2:a]volume=0.12[bgm];"
             "[voz][bgm]amix=inputs=2:duration=first:dropout_transition=0:normalize=0[aout]"
         )
         filter_final = filter_complex + f";{audio_filter}"
@@ -439,19 +446,43 @@ def montar_video(
         fs.write(filter_final)
 
     print("Renderizando video final com audio + legendas + efeitos...")
-    run_ffmpeg(
-        ffmpeg_inputs + [
-            "-filter_complex_script", filter_script,
-            "-map", "[vout]",
-        ] + audio_map + [
-            "-c:v", "libx264", "-crf", "22", "-preset", "medium",
-            "-c:a", "aac", "-b:a", "192k",
-            "-t", str(duracao_total),
-            "-r", str(VIDEO_FPS),
-            "-movflags", "+faststart",
-            "-pix_fmt", "yuv420p",
-            output_file,
-        ], description="Video final")
+    try:
+        run_ffmpeg(
+            ffmpeg_inputs + [
+                "-filter_complex_script", filter_script,
+                "-map", "[vout]",
+            ] + audio_map + [
+                "-c:v", "libx264", "-crf", "22", "-preset", "medium",
+                "-c:a", "aac", "-b:a", "192k",
+                "-t", str(duracao_total),
+                "-r", str(VIDEO_FPS),
+                "-movflags", "+faststart",
+                "-pix_fmt", "yuv420p",
+                output_file,
+            ], description="Video final (com musica)" if musica_escolhida else "Video final (sem musica)")
+    except RuntimeError as ffmpeg_err:
+        if musica_escolhida:
+            # Fallback: tenta renderizar sem música caso o mix falhe
+            print(f"\n  [FALLBACK] Falha ao mixar musica: {ffmpeg_err}")
+            print("  [FALLBACK] Tentando renderizar sem musica de fundo...")
+            ffmpeg_inputs_sem = ["-i", video_concat, "-i", audio_file]
+            filter_sem_musica = filter_complex + ";[1:a]loudnorm,volume=1.50[aout]"
+            with open(filter_script, "w", encoding="utf-8") as fs:
+                fs.write(filter_sem_musica)
+            run_ffmpeg(
+                ffmpeg_inputs_sem + [
+                    "-filter_complex_script", filter_script,
+                    "-map", "[vout]", "-map", "[aout]",
+                    "-c:v", "libx264", "-crf", "22", "-preset", "medium",
+                    "-c:a", "aac", "-b:a", "192k",
+                    "-t", str(duracao_total),
+                    "-r", str(VIDEO_FPS),
+                    "-movflags", "+faststart",
+                    "-pix_fmt", "yuv420p",
+                    output_file,
+                ], description="Video final (fallback sem musica)")
+        else:
+            raise
 
     tamanho = Path(output_file).stat().st_size / (1024 * 1024)
     print(f"\nVideo final: {output_file} ({tamanho:.1f} MB)")
