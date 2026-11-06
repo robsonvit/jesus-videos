@@ -6,7 +6,7 @@ Correções aplicadas:
   [FIX-2] Frame freeze: fps=30 + setpts=PTS-STARTPTS em todos os clips antes do concat
   [FIX-3] Legenda embolada: escape seguro via re.sub + pausa mínima 0.6s por bloco
   [FIX-4] Voz rápida: tempo mínimo por bloco aumentado para 0.6s
-  [FIX-5] Normalização e volume: voz 150% + loudnorm; música normalizada (loudnorm) a 12% suave de fundo
+  [FIX-5] Normalização e volume: voz 150% + loudnorm; música a 14.4% suave de fundo (+20% sobre 12%)
   [FIX-6] Legendas sem sobreposição: fim de cada bloco limitado ao início do próximo
   [FIX-7] Câmera lenta 0.5x nos clips Pexels (setpts=2.0*PTS)
   [FIX-8] Embaralhamento dinâmico: ordem diferente a cada reciclagem de clips
@@ -415,7 +415,7 @@ def montar_video(
     # ── Monta áudio: narração pura OU narração + fundo 30% ────────────────────
     # [FIX-5] Voz em 150% + loudnorm (Fish Audio), música normalizada (loudnorm) e reduzida a 12%
     if musica_escolhida:
-        print("Mixando narracao + musica de fundo (voz normalizada 150%, fundo normalizado 12%)...")
+        print("Mixando narracao + musica de fundo (voz normalizada 150%, fundo 14.4%)...")
         ffmpeg_inputs = [
             "-i", video_concat,
             "-i", audio_file,
@@ -423,11 +423,11 @@ def montar_video(
         ]
         # amix com normalize=0 para o ffmpeg não reduzir os volumes pela metade
         # loudnorm na voz para nivelar e encorpar a narração
-        # loudnorm na música para normalizar o ganho de qualquer faixa + volume=0.12 para trilha suave que não ofusca a voz
+        # loudnorm na música para normalizar o ganho de qualquer faixa + volume=0.144 (+20% sobre 0.12) para trilha suave
         # [FIX-5] volume simples no BGM: mais estavel que loudnorm com stream_loop infinito
         audio_filter = (
             "[1:a]loudnorm,volume=1.50[voz];"
-            "[2:a]volume=0.12[bgm];"
+            "[2:a]volume=0.144[bgm];"
             "[voz][bgm]amix=inputs=2:duration=first:dropout_transition=0:normalize=0[aout]"
         )
         filter_final = filter_complex + f";{audio_filter}"
